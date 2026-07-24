@@ -24,6 +24,10 @@ const register = async (req,res)=>{
   const {password, name, email, dob, country, city, street, state, zip, phoneNumbers} = req.body
   pass = await encryptPass(password)
 
+  // Convert empty strings to null for integer/date fields
+  const safeZip = zip === '' ? null : zip;
+  const safeDob = dob === '' ? null : dob;
+
   await pool.query(
     `INSERT INTO "Customer" (
       "Password", 
@@ -37,7 +41,7 @@ const register = async (req,res)=>{
       "ZIP"
     ) 
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-    [pass, name, email, dob, country, city, street, state, zip]
+    [pass, name, email, safeDob, country || null, city || null, street || null, state || null, safeZip]
   );
 
   const user = await pool.query(
@@ -46,10 +50,13 @@ const register = async (req,res)=>{
   );
   
   for (const phoneNumber of phoneNumbers) {
-    await pool.query(
-      `INSERT INTO "CPhone" VALUES ($1, $2)`,
-      [user.rows[0].CustomerId, phoneNumber]
-    );
+    const safePhone = phoneNumber === '' ? null : parseInt(phoneNumber, 10);
+    if (safePhone !== null) {
+      await pool.query(
+        `INSERT INTO "CPhone" VALUES ($1, $2)`,
+        [user.rows[0].CustomerId, safePhone]
+      );
+    }
   }
 
   await pool.query(
