@@ -29,7 +29,7 @@ A full-stack web application for browsing, purchasing, and managing video games.
 |--------------|-------------------------------------------------------------|
 | **Frontend** | React 18, Vite, Tailwind CSS, Material UI (MUI)            |
 | **Backend**  | Node.js, Express.js                                         |
-| **Database** | Microsoft SQL Server (MSSQL)                                |
+| **Database** | PostgreSQL (Neon)                                            |
 | **Auth**     | JSON Web Tokens (JWT), bcrypt.js                            |
 | **Maps**     | Leaflet / React-Leaflet                                     |
 | **Security** | Helmet, CORS, XSS-Clean, Express Rate Limiter              |
@@ -48,7 +48,7 @@ Game-Store/
 │   │   ├── no-auth.js         # Public endpoints (browse games)
 │   │   └── req-auth.js        # Protected endpoints (cart, orders, admin)
 │   ├── db/
-│   │   └── dbconfig.js        # MSSQL connection configuration
+│   │   └── dbconfig.js        # PostgreSQL connection configuration
 │   ├── middleware/
 │   │   ├── route-auth.js      # JWT authentication middleware
 │   │   └── error-handler.js   # Global error handler
@@ -122,7 +122,7 @@ Game-Store/
 
 ### Prerequisites
 - **Node.js** (v16+)
-- **Microsoft SQL Server** (with a database named `steam`)
+- **PostgreSQL** ([Neon](https://neon.tech) hosted database)
 - **npm**
 
 ### 1. Clone the Repository
@@ -141,9 +141,8 @@ Create a `.env` file in the `BackEnd/` directory:
 ```env
 PORT=3000
 JWT_SECRET=your_jwt_secret_here
+DATABASE_URL=postgresql://neondb_owner:YOUR_PASSWORD_HERE@ep-calm-cell-ayebsizl-pooler.c-5.us-east-2.aws.neon.tech/neondb?sslmode=require
 ```
-
-Update `db/dbconfig.js` with your SQL Server credentials.
 
 ```bash
 npm start

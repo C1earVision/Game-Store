@@ -1,31 +1,18 @@
-const sql = require("mssql");
+const { Pool } = require("pg");
 
-const dbConfig = {
-  server: "DESKTOP-39J7HPU",
-  user:"Ruxuis",
-  password:"ParCore9@",         
-  database: "steam",    
-  options: {
-    encrypt: false,                  
-    trustServerCertificate: true,
-    trustedConnection:false,
-    enableArithAbort:true,
-    instancename:"SQLEXPRESS",
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
   },
-  port:1433
-};
+});
 
+pool.on("connect", () => {
+  console.log("Connected to Neon PostgreSQL");
+});
 
+pool.on("error", (err) => {
+  console.error("Database connection error: ", err);
+});
 
-const poolPromise = new sql.ConnectionPool(dbConfig)
-  .connect()
-  .then(pool => {
-    console.log("Connected to SQL Server");
-    return pool;
-  })
-  .catch(err => {
-    console.error("Database connection failed: ", err);
-    throw err;
-  });
-
-module.exports = poolPromise;
+module.exports = pool;

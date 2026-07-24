@@ -1,7 +1,6 @@
 const CustomAPIError = require('../errors/custom-error')
 const { StatusCodes } = require('http-status-codes')
-const dbConnect = require('../db/dbconfig')
-const sql = require('mssql');
+const pool = require('../db/dbconfig')
 
 
 
@@ -19,38 +18,34 @@ const addGame = async (req, res) => {
   }
 
   try {
-    const db = await dbConnect;
+    const categoryQuery = await pool.query(
+      `SELECT "CategoryId" FROM "Category" WHERE "Name" = $1`,
+      [categoryId]
+    );
 
-    const categoryQuery = await db.request()
-      .input('CategoryName', sql.VarChar, categoryId)
-      .query("SELECT CategoryId FROM Category WHERE Name = @CategoryName");
-
-    if (categoryQuery.recordset.length === 0) {
+    if (categoryQuery.rows.length === 0) {
       throw new CustomAPIError('Category not found', StatusCodes.BAD_REQUEST);
     }
 
-    const categoryIdFromDb = categoryQuery.recordset[0].CategoryId;
+    const categoryIdFromDb = categoryQuery.rows[0].CategoryId;
 
     // Insert the game into the Product table
-    const productId = await db.request()
-      .input('Name', sql.VarChar, name)
-      .input('Brand', sql.VarChar, brand)
-      .input('Description', sql.VarChar, desc)
-      .input('Rating', sql.Float, rating)
-      .input('Price', sql.Int, price)
-      .input('StockQuantity', sql.Int, sq)
-      .input('CategoryId', sql.Int, categoryIdFromDb)
-      .input('Platform', sql.VarChar, platform)
-      .input('ReleaseDate', sql.VarChar, releaseDate)
-      .query("INSERT INTO Product (Name, Brand, Description, Rating, Price, StockQuantity, CategoryId, Platform, ReleaseDate) VALUES(@Name, @Brand, @Description, @Rating, @Price, @StockQuantity, @CategoryId, @Platform, @ReleaseDate); SELECT SCOPE_IDENTITY() AS ProductId");
+    const productResult = await pool.query(
+      `INSERT INTO "Product" ("Name", "Brand", "Description", "Rating", "Price", "StockQuantity", "CategoryId", "Platform", "ReleaseDate") 
+       VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+       RETURNING "ProductId"`,
+      [name, brand, desc, rating, price, sq, categoryIdFromDb, platform, releaseDate]
+    );
+
+    const newProductId = productResult.rows[0].ProductId;
 
     // Save images to the database
     for (let img of imgs) {
       const imgBuffer = img.buffer;  // Get the buffer from the uploaded image
-      await db.request()
-        .input('ProductId', sql.Int, productId.recordset[0].ProductId)
-        .input('Img', sql.VarBinary, imgBuffer)  // Store image as binary in the database
-        .query("INSERT INTO Product_IMG (ProductId, Img) VALUES(@ProductId, @Img)");
+      await pool.query(
+        `INSERT INTO "Product_IMG" ("ProductId", "Img") VALUES($1, $2)`,
+        [newProductId, imgBuffer]
+      );
     }
 
     res.status(StatusCodes.OK).send('Game added successfully');
@@ -68,11 +63,10 @@ const addCategory = async (req, res) => {
   if (!admin) {
     throw new CustomAPIError('this user has no access to this route', StatusCodes.UNAUTHORIZED)
   }
-  const db = await dbConnect;
-  await db.request()
-    .input('Name', sql.VarChar, name)
-    .input('Description', sql.VarChar, desc)
-    .query("INSERT INTO Category (Name, Description) VALUES(@Name, @Description)");
+  await pool.query(
+    `INSERT INTO "Category" ("Name", "Description") VALUES($1, $2)`,
+    [name, desc]
+  );
   res.status(StatusCodes.CREATED).send('Category Added Successfully')
 }
 
@@ -86,18 +80,17 @@ const modifyGame = async (req, res) => {
     throw new CustomAPIError('this user has no access to this route', StatusCodes.UNAUTHORIZED);
   }
 
-  const db = await dbConnect;
-
   // Handle non-file field updates (e.g., CategoryId)
   if (Object.keys(update)[0] == 'CategoryId') {
-    const CategoryId = await db.request()
-      .input('Name', update[Object.keys(update)[0]])
-      .query(`SELECT CategoryId FROM Category WHERE Name = @Name`);
+    const CategoryId = await pool.query(
+      `SELECT "CategoryId" FROM "Category" WHERE "Name" = $1`,
+      [update[Object.keys(update)[0]]]
+    );
     
-    await db.request()
-      .input('CategoryId', CategoryId.recordset[0].CategoryId)
-      .input('ProductId', id)
-      .query(`UPDATE Product SET CategoryId = @CategoryId WHERE ProductId = @ProductId`);
+    await pool.query(
+      `UPDATE "Product" SET "CategoryId" = $1 WHERE "ProductId" = $2`,
+      [CategoryId.rows[0].CategoryId, id]
+    );
 
     res.status(StatusCodes.OK).send('Game Modified');
   
@@ -109,14 +102,10 @@ const modifyGame = async (req, res) => {
     }
 
     try {
-      await db.request()
-        .input('ProductId', id)
-        .input('ImageBuffer', sql.VarBinary(sql.MAX), imageBuffer)
-        .query(`
-          UPDATE Product_IMG
-          SET Img = @ImageBuffer
-          WHERE ProductId = @ProductId
-        `);
+      await pool.query(
+        `UPDATE "Product_IMG" SET "Img" = $1 WHERE "ProductId" = $2`,
+        [imageBuffer, id]
+      );
 
       res.status(StatusCodes.OK).send('Game Modified');
 
@@ -126,16 +115,15 @@ const modifyGame = async (req, res) => {
     }
 
   } else {
-    await db.request()
-      .input(Object.keys(update)[0], update[Object.keys(update)[0]])
-      .input('ProductId', id)
-      .query(`UPDATE Product SET ${Object.keys(update)[0]} = @${Object.keys(update)[0]} WHERE ProductId = @ProductId`);
+    const fieldName = Object.keys(update)[0];
+    await pool.query(
+      `UPDATE "Product" SET "${fieldName}" = $1 WHERE "ProductId" = $2`,
+      [update[fieldName], id]
+    );
 
     res.status(StatusCodes.OK).send('Game Modified');
   }
 };
-
-
 
 
 
@@ -145,15 +133,15 @@ const modifyAdminAccess = async (req, res) => {
   if (!admin) {
     throw new CustomAPIError('this user has no access to this route', StatusCodes.UNAUTHORIZED)
   }
-  const db = await dbConnect;
-  user = await db.request()
-    .input('CustomerId', id)
-    .query(`SELECT CustomerId, AdminState FROM Customer WHERE CustomerId = @CustomerId`);
-  const adimnState = user.recordset[0].AdminState == 0 ? 1 : 0
-  await db.request()
-    .input('AdminState', adimnState)
-    .input('CustomerId', user.recordset[0].CustomerId)
-    .query(`UPDATE Customer SET AdminState = @AdminState WHERE CustomerId = @CustomerId`);
+  const user = await pool.query(
+    `SELECT "CustomerId", "AdminState" FROM "Customer" WHERE "CustomerId" = $1`,
+    [id]
+  );
+  const adminState = user.rows[0].AdminState == 0 ? 1 : 0
+  await pool.query(
+    `UPDATE "Customer" SET "AdminState" = $1 WHERE "CustomerId" = $2`,
+    [adminState, user.rows[0].CustomerId]
+  );
   res.status(StatusCodes.OK).send('Admin State Changed Successfully')
 }
 
@@ -162,108 +150,97 @@ const deleteGame = async (req, res) => {
   if (!admin) {
     throw new CustomAPIError('this user has no access to this route', StatusCodes.UNAUTHORIZED)
   }
-  const db = await dbConnect;
-  await db.request()
-    .input('ProductId', id)
-    .query("DELETE FROM Product WHERE ProductId = @ProductId");
+  await pool.query(
+    `DELETE FROM "Product" WHERE "ProductId" = $1`,
+    [id]
+  );
   res.status(StatusCodes.OK).send('book deleted succesfully')
 }
 
 const addGameToCart = async (req, res) => {
   const { user: { customerId }, params: { id: productId }, body: { quantity } } = req
-  const db = await dbConnect;
-  cartId = await db.request()
-    .input('CustomerId', customerId)
-    .query("SELECT CartId FROM Cart WHERE CustomerId = @CustomerId");
-  await db.request()
-    .input('CartId', cartId.recordset[0].CartId)
-    .input('Quantity', quantity)
-    .input('ProductId', productId)
-    .query("INSERT INTO CartItem VALUES (@Quantity, @CartId, @ProductId)");
+  const cartId = await pool.query(
+    `SELECT "CartId" FROM "Cart" WHERE "CustomerId" = $1`,
+    [customerId]
+  );
+  await pool.query(
+    `INSERT INTO "CartItem" ("Quantity", "CartId", "ProductId") VALUES ($1, $2, $3)`,
+    [quantity, cartId.rows[0].CartId, productId]
+  );
   res.status(StatusCodes.OK).send('Game Added to Cart')
 }
 
 const getCartItems = async (req, res) => {
   const { customerId } = req.user;
-  const db = await dbConnect;
 
-  const cartIdResult = await db.request()
-    .input('CustomerId', customerId)
-    .query("SELECT CartId FROM Cart WHERE CustomerId = @CustomerId");
+  const cartIdResult = await pool.query(
+    `SELECT "CartId" FROM "Cart" WHERE "CustomerId" = $1`,
+    [customerId]
+  );
 
-  const cartId = cartIdResult.recordset[0].CartId;
+  const cartId = cartIdResult.rows[0].CartId;
 
-  const games = await db.request()
-    .input('CartId', cartId)
-    .query(`
-      SELECT 
-        p.ProductId,
-        p.Name, 
-        p.Price,
-        p.Brand,
-        p.platform,
-        ci.Quantity
-      FROM CartItem ci
-      INNER JOIN Product p ON ci.ProductId = p.ProductId
-      WHERE ci.CartId = @CartId
-    `);
+  const games = await pool.query(
+    `SELECT 
+      p."ProductId",
+      p."Name", 
+      p."Price",
+      p."Brand",
+      p."Platform",
+      ci."Quantity"
+    FROM "CartItem" ci
+    INNER JOIN "Product" p ON ci."ProductId" = p."ProductId"
+    WHERE ci."CartId" = $1`,
+    [cartId]
+  );
 
-  res.status(StatusCodes.OK).json({ games: games.recordset });
+  res.status(StatusCodes.OK).json({ games: games.rows });
 
 }
 
 const deleteCartItem = async (req, res) => {
   const { params: { id: productId }, user: { customerId } } = req
-  const db = await dbConnect;
-  cartId = await db.request()
-    .input('CustomerId', customerId)
-    .query("SELECT CartId FROM Cart WHERE CustomerId = @CustomerId");
+  const cartId = await pool.query(
+    `SELECT "CartId" FROM "Cart" WHERE "CustomerId" = $1`,
+    [customerId]
+  );
 
-
-  await db.request()
-    .input('CartId', cartId.recordset[0].CartId)
-    .input('ProductId', productId)
-    .query("DELETE FROM CartItem WHERE CartId = @CartId AND ProductId = @ProductId");
+  await pool.query(
+    `DELETE FROM "CartItem" WHERE "CartId" = $1 AND "ProductId" = $2`,
+    [cartId.rows[0].CartId, productId]
+  );
 
   res.status(StatusCodes.OK).send('Game Deleted Successfully')
 }
 
 const placeOrder = async (req, res) => {
   const { user: { customerId }, body: {cartItems, total} } = req
-  const db = await dbConnect;
-  let orderId = await db.request()
-    .input('CustomerId', customerId)
-    .input('TotalAmount', total)
-    .input('AmountPaid', total)
-    .query(`
-      INSERT INTO TheOrder (CustomerId, TotalAmount, AmountPaid)
-      OUTPUT INSERTED.OrderId
-      VALUES (@CustomerId, @TotalAmount, @AmountPaid)
-    `);
 
-  orderId = orderId.recordset[0].OrderId;
+  let orderResult = await pool.query(
+    `INSERT INTO "TheOrder" ("CustomerId", "TotalAmount", "AmountPaid")
+     VALUES ($1, $2, $3)
+     RETURNING "OrderId"`,
+    [customerId, total, total]
+  );
 
-  let orderItemId = await db.request()
-    .input('Price', total)
-    .input('OrderId', orderId)
-    .query(`
-      INSERT INTO OrderItem
-      OUTPUT INSERTED.OrderItemId
-      VALUES (@Price, @OrderId)
-    `);
-  orderItemId = orderItemId.recordset[0].OrderItemId;
+  const orderId = orderResult.rows[0].OrderId;
+
+  let orderItemResult = await pool.query(
+    `INSERT INTO "OrderItem" ("Price", "OrderId")
+     VALUES ($1, $2)
+     RETURNING "OrderItemId"`,
+    [total, orderId]
+  );
+  const orderItemId = orderItemResult.rows[0].OrderItemId;
 
 
-  cartItems.map(async (item)=>{
-    await db.request()
-    .input('OrderItemId', orderItemId)
-    .input('ProductId', item.ProductId)
-    .input('Quantity', item.Quantity)
-    .query(`
-      INSERT INTO OrderItemProducts
-      VALUES (@OrderItemId, @ProductId, @Quantity)
-    `);
-  })
+  for (const item of cartItems) {
+    await pool.query(
+      `INSERT INTO "OrderItemProducts" ("OrderItemId", "ProductId", "Quantity")
+       VALUES ($1, $2, $3)`,
+      [orderItemId, item.ProductId, item.Quantity]
+    );
+  }
 
   
   res.status(StatusCodes.CREATED).send('Order Placed Successfully')
@@ -272,27 +249,31 @@ const placeOrder = async (req, res) => {
 
 const getOrders = async (req, res) => {
   const { user: { customerId, admin } } = req
-  const db = await dbConnect;
-  const orders = await db.request()
-    .input('CustomerId', customerId)
-    .query(`
-      SELECT
-        p.Name AS ProductName,
-        p.Price AS ProductPrice,
-        oi.Price AS TotalOrderPrice,
-        oip.Quantity,
-        o.CustomerId,
-        o.OrderId,
-        o.OrderDate,
-        o.Status
-      FROM TheOrder o
-      INNER JOIN OrderItem oi ON o.OrderId = oi.OrderId
-      INNER JOIN OrderItemProducts oip ON oi.OrderItemId = oip.OrderItemId
-      INNER JOIN Product p ON oip.ProductId = p.ProductId
-      ${admin === 1 ? '': `WHERE o.CustomerId = @CustomerId`}
-    `);
   
-  const groupedOrders = orders.recordset.reduce((acc, order) => {
+  let queryText = `
+    SELECT
+      p."Name" AS "ProductName",
+      p."Price" AS "ProductPrice",
+      oi."Price" AS "TotalOrderPrice",
+      oip."Quantity",
+      o."CustomerId",
+      o."OrderId",
+      o."OrderDate",
+      o."Status"
+    FROM "TheOrder" o
+    INNER JOIN "OrderItem" oi ON o."OrderId" = oi."OrderId"
+    INNER JOIN "OrderItemProducts" oip ON oi."OrderItemId" = oip."OrderItemId"
+    INNER JOIN "Product" p ON oip."ProductId" = p."ProductId"`;
+
+  let params = [];
+  if (admin !== 1) {
+    queryText += ` WHERE o."CustomerId" = $1`;
+    params = [customerId];
+  }
+
+  const orders = await pool.query(queryText, params);
+  
+  const groupedOrders = orders.rows.reduce((acc, order) => {
     const { OrderId, ProductName, CustomerId, ProductPrice, TotalOrderPrice, OrderDate, Quantity, Status } = order;
   
     const existingOrder = acc.find((group) => group.OrderId === OrderId);
@@ -323,22 +304,19 @@ const getOrders = async (req, res) => {
     return acc;
   }, []);  
   if (admin) {
-    const getAddresses = async () => {
-      const addresses = [];
-      
-        await Promise.all(groupedOrders.map(async (order) => {
-        const address = await db.request()
-          .input('CustomerId', order.CustomerId)
-          .query('SELECT Country, City, State, Street FROM Customer WHERE CustomerId = @CustomerId');
-          
-        addresses.push(address.recordset[0]);
-      }));
+    const addresses = [];
+    
+    await Promise.all(groupedOrders.map(async (order) => {
+      const address = await pool.query(
+        `SELECT "Country", "City", "State", "Street" FROM "Customer" WHERE "CustomerId" = $1`,
+        [order.CustomerId]
+      );
+        
+      addresses.push(address.rows[0]);
+    }));
   
-      console.log(addresses);
-      res.status(StatusCodes.OK).send({ groupedOrders, addresses });
-    };
-  
-    getAddresses();
+    console.log(addresses);
+    res.status(StatusCodes.OK).send({ groupedOrders, addresses });
     return;
   }
   
@@ -348,10 +326,10 @@ const getOrders = async (req, res) => {
 
 const updateOrderStatus = async (req, res)=>{
   const { status, orderId } = req.body
-  const db = await dbConnect;
-  await db.request()
-  .input('OrderId', orderId)
-  .query(`UPDATE TheOrder SET Status = 'DELIVERED' WHERE OrderId = @OrderId`)
+  await pool.query(
+    `UPDATE "TheOrder" SET "Status" = 'DELIVERED' WHERE "OrderId" = $1`,
+    [orderId]
+  );
   res.status(StatusCodes.OK).send('Status Has Been Updated Successfully')
 }
 
@@ -359,14 +337,12 @@ const updateOrderStatus = async (req, res)=>{
 const addReview = async (req, res) => {
   const {id:productId} = req.params
   const {rating, comment} = req.body
-  const db = await dbConnect;
 
-  await db.request()
-    .input('ProductId', productId)
-    .input('Rating', rating)
-    .input('Comment', comment)
-    .query("INSERT INTO Review (ProductId, Rating, Comment) VALUES (@ProductId, @Rating, @Comment)");
-    res.status(StatusCodes.OK).send('Review Added Successfully')
+  await pool.query(
+    `INSERT INTO "Review" ("ProductId", "Rating", "Comment") VALUES ($1, $2, $3)`,
+    [productId, rating, comment]
+  );
+  res.status(StatusCodes.OK).send('Review Added Successfully')
 }
 
 module.exports = {

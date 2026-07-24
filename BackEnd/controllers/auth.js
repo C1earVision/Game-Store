@@ -1,9 +1,8 @@
 const CustomAPIError = require('../errors/custom-error')
 const {StatusCodes} = require('http-status-codes')
-const dbConnect = require('../db/dbconfig')
+const pool = require('../db/dbconfig')
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const sql = require('mssql');
 
 const createJWT = function (admin, _id, name){
   return jwt.sign({admin:admin ,customerId:_id, name:name}, process.env.JWT_SECRET, {expiresIn:process.env.JWT_LIFETIME})
@@ -24,116 +23,91 @@ const comparePassword = async function (sentPass, originalPass){
 const register = async (req,res)=>{
   const {password, name, email, dob, country, city, street, state, zip, phoneNumbers} = req.body
   pass = await encryptPass(password)
-  const db = await dbConnect;
 
-  await db.request()
-  .input('Password', sql.VarChar, pass)  
-  .input('Name', sql.VarChar, name)         
-  .input('Email', sql.VarChar, email)         
-  .input('DateOfBirth', sql.Date, dob)       
-  .input('Country', sql.VarChar, country)   
-  .input('City', sql.VarChar, city)           
-  .input('Street', sql.VarChar, street)       
-  .input('State', sql.VarChar, state)       
-  .input('ZIP', sql.Int, zip)                  
-  .query(`
-    INSERT INTO Customer (
-      Password, 
-      Name, 
-      Email, 
-      DateOfBirth, 
-      Country, 
-      City, 
-      Street, 
-      [State], 
-      ZIP
+  await pool.query(
+    `INSERT INTO "Customer" (
+      "Password", 
+      "Name", 
+      "Email", 
+      "DateOfBirth", 
+      "Country", 
+      "City", 
+      "Street", 
+      "State", 
+      "ZIP"
     ) 
-    VALUES (
-      @Password, 
-      @Name, 
-      @Email, 
-      @DateOfBirth, 
-      @Country, 
-      @City, 
-      @Street, 
-      @State, 
-      @ZIP
-    );
-  `);
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+    [pass, name, email, dob, country, city, street, state, zip]
+  );
 
-
-  const user = await db.request()
-  .input('Email', sql.VarChar, email)
-  .query(`SELECT * FROM Customer WHERE email = @Email`)
+  const user = await pool.query(
+    `SELECT * FROM "Customer" WHERE "Email" = $1`,
+    [email]
+  );
   
-  phoneNumbers.forEach(async phoneNumber => {
-    await db.request()
-    .input('CustomerId', sql.Int, user.recordset[0].CustomerId)  
-    .input('Phone', sql.Int, phoneNumber)                      
-    .query(`
-      INSERT INTO CPhone
-      VALUES (
-        @CustomerId,
-        @Phone
-      );
-    `);
-  });
-  await db.request()
-  .input('CustomerId', sql.Int, user.recordset[0].CustomerId)
-  .query("INSERT INTO Cart VALUES (@CustomerId)")
-  user.recordset[0] = {...user.recordset[0], phoneNumbers}
-  const token = createJWT(user.recordset[0].AdminState, user.recordset[0].CustomerId, user.recordset[0].Name)
-  res.status(StatusCodes.CREATED).json({user:user.recordset[0], token})
+  for (const phoneNumber of phoneNumbers) {
+    await pool.query(
+      `INSERT INTO "CPhone" VALUES ($1, $2)`,
+      [user.rows[0].CustomerId, phoneNumber]
+    );
+  }
+
+  await pool.query(
+    `INSERT INTO "Cart" ("CustomerId") VALUES ($1)`,
+    [user.rows[0].CustomerId]
+  );
+
+  user.rows[0] = {...user.rows[0], phoneNumbers}
+  const token = createJWT(user.rows[0].AdminState, user.rows[0].CustomerId, user.rows[0].Name)
+  res.status(StatusCodes.CREATED).json({user:user.rows[0], token})
 }
 
 const login = async (req,res)=>{
   const {email ,password} = req.body
-  const db = await dbConnect;
-  const user = await db.request()
-  .input('Email', sql.NVarChar, email)
-  .query(`
-    SELECT 
-      c.CustomerId,
-      c.Name,
-      c.Email,
-      c.Password,
-      c.Country,
-      c.City,
-      c.Street,
-      c.State,
-      c.AdminState,
-      STRING_AGG(cp.Phone, ',') AS PhoneNumbers
+  const user = await pool.query(
+    `SELECT 
+      c."CustomerId",
+      c."Name",
+      c."Email",
+      c."Password",
+      c."Country",
+      c."City",
+      c."Street",
+      c."State",
+      c."AdminState",
+      STRING_AGG(cp."Phone"::TEXT, ',') AS "PhoneNumbers"
     FROM 
-      Customer c
+      "Customer" c
     INNER JOIN 
-      CPhone cp ON c.CustomerId = cp.CustomerId
+      "CPhone" cp ON c."CustomerId" = cp."CustomerId"
     WHERE 
-      c.Email = @Email
+      c."Email" = $1
     GROUP BY 
-      c.CustomerId, 
-      c.Name, 
-      c.Email, 
-      c.Password, 
-      c.Country, 
-      c.City, 
-      c.Street, 
-      c.State,
-      c.AdminState
-  `);
+      c."CustomerId", 
+      c."Name", 
+      c."Email", 
+      c."Password", 
+      c."Country", 
+      c."City", 
+      c."Street", 
+      c."State",
+      c."AdminState"`,
+    [email]
+  );
 
-  user.recordset[0].PhoneNumbers = user.recordset[0].PhoneNumbers.split(',')
-  if(!user){
+  if(!user.rows[0]){
     throw new CustomAPIError('Email or password wrong', StatusCodes.UNAUTHORIZED)
   }
-  
 
-  const passIsMatch = await comparePassword(password, user.recordset[0].Password)
+  user.rows[0].PhoneNumbers = user.rows[0].PhoneNumbers.split(',')
+
+  const passIsMatch = await comparePassword(password, user.rows[0].Password)
   if(!passIsMatch){
     throw new CustomAPIError('Password doesnt match', StatusCodes.UNAUTHORIZED)
   }
 
-  const token = createJWT(user.recordset[0].AdminState, user.recordset[0].CustomerId, user.recordset[0].Name)
-  res.status(StatusCodes.OK).json({user:user.recordset[0], token})
+  const token = createJWT(user.rows[0].AdminState, user.rows[0].CustomerId, user.rows[0].Name)
+  res.status(StatusCodes.OK).json({user:user.rows[0], token})
 }
 
 
