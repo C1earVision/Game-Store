@@ -11,7 +11,7 @@ const UpdateProduct = () => {
     Rating: "",
     Price: "",
     StockQuantity: "",
-    CategoryId: "", 
+    CategoryId: "",
     Platform: "",
     Images: ["", "", ""],
   });
@@ -22,7 +22,7 @@ const UpdateProduct = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(`https://game-store-txao-eight.vercel.app/api/v1/products/${id}`);
+        const response = await axios.get(`https://game-store-zo3k.vercel.app/api/v1/products/${id}`);
         const product = response.data.game[0];
         setFieldValues({
           Name: product.Name || "",
@@ -54,46 +54,46 @@ const UpdateProduct = () => {
     setFieldValues({ ...fieldValues, Images: newImages });
   };
 
-// Update individual fields (including images)
-const handleUpdate = async (field, index) => {
-  const user = JSON.parse(localStorage.getItem("user"));
-  const updateImg = new FormData();  // Use FormData to handle file uploads
-  const updateData = {};  // Use this for non-image fields
+  // Update individual fields (including images)
+  const handleUpdate = async (field, index) => {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const updateImg = new FormData();  // Use FormData to handle file uploads
+    const updateData = {};  // Use this for non-image fields
 
-  // Check if the field is "Images" and the specific image at index is valid
-  if (field === "Images" && fieldValues.Images[index]) {
-    const image = fieldValues.Images[index];
-    if (image instanceof File) {
-      // If it's a valid File object, append it to FormData
-      updateImg.append(`image${index}`, image);
-    } else {
-      console.error(`Invalid image at index ${index}`);
-      alert(`Invalid image at index ${index}. Please try again.`);
-      return; // Exit the function if the image is invalid
-    }
-  } else {
-    // If it's not "Images", just append the field's value to updateData
-    updateData[field] = fieldValues[field];
-  }
-
-  try {
-    await axios.patch(
-      `https://game-store-txao-eight.vercel.app/api/v1/user/admin/${id}`,
-      field === 'Images' ? updateImg : updateData, 
-      {
-        headers: { 
-          Authorization: `Bearer ${user.token}`,
-          'Content-Type': field === 'Images' ? 'multipart/form-data' : 'application/json',
-        },
+    // Check if the field is "Images" and the specific image at index is valid
+    if (field === "Images" && fieldValues.Images[index]) {
+      const image = fieldValues.Images[index];
+      if (image instanceof File) {
+        // If it's a valid File object, append it to FormData
+        updateImg.append(`image${index}`, image);
+      } else {
+        console.error(`Invalid image at index ${index}`);
+        alert(`Invalid image at index ${index}. Please try again.`);
+        return; // Exit the function if the image is invalid
       }
-    );
+    } else {
+      // If it's not "Images", just append the field's value to updateData
+      updateData[field] = fieldValues[field];
+    }
 
-    alert(`${field} updated successfully!`);
-  } catch (error) {
-    console.error(`Error updating ${field}:`, error);
-    alert(`Failed to update ${field}.`);
-  }
-};
+    try {
+      await axios.patch(
+        `https://game-store-zo3k.vercel.app/api/v1/user/admin/${id}`,
+        field === 'Images' ? updateImg : updateData,
+        {
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+            'Content-Type': field === 'Images' ? 'multipart/form-data' : 'application/json',
+          },
+        }
+      );
+
+      alert(`${field} updated successfully!`);
+    } catch (error) {
+      console.error(`Error updating ${field}:`, error);
+      alert(`Failed to update ${field}.`);
+    }
+  };
 
 
 

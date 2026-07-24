@@ -10,7 +10,7 @@ const Product = () => {
 
   useEffect(() => {
     const getData = async () => {
-      const url = `https://game-store-txao-eight.vercel.app/api/v1/products/${gameId}`;
+      const url = `https://game-store-zo3k.vercel.app/api/v1/products/${gameId}`;
       const response = await axios.get(url);
       setData(response.data.game[0]);
       if (response.data.game[0]?.Images?.length > 0) {
@@ -22,7 +22,7 @@ const Product = () => {
 
   const addToCart = async () => {
     const user = JSON.parse(localStorage.getItem("user"));
-    const url = `https://game-store-txao-eight.vercel.app/api/v1/user/cart/${gameId}`;
+    const url = `https://game-store-zo3k.vercel.app/api/v1/user/cart/${gameId}`;
     if (!user) {
       alert("Please Log In");
       return;

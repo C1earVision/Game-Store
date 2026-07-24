@@ -12,7 +12,7 @@ const Home = ({ setGameId, gameId }) => {
   useEffect(() => {
     const getData = async () => {
       try {
-        const response = await axios.get(`https://game-store-txao-eight.vercel.app/api/v1/products`);
+        const response = await axios.get(`https://game-store-zo3k.vercel.app/api/v1/products`);
         setData(response.data.games);
       } catch (error) {
         console.error("Error fetching data:", error);

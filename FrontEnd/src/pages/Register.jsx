@@ -69,7 +69,7 @@ const Register = ({ setUserData }) => {
       if (data) {
         try {
           console.log('Form Submitted:', { ...data });
-          const url = `https://game-store-txao-eight.vercel.app/api/v1/auth/register`;
+          const url = `https://game-store-zo3k.vercel.app/api/v1/auth/register`;
           const user = await axios.post(url, {
             ...data
           });

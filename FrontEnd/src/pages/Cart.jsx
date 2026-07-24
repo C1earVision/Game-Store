@@ -8,7 +8,7 @@ const Cart = () => {
 
   const removeItem = async (id) => {
     const user = JSON.parse(localStorage.getItem("user"));
-    const url = `https://game-store-txao-eight.vercel.app/api/v1/user/cart/${id}`;
+    const url = `https://game-store-zo3k.vercel.app/api/v1/user/cart/${id}`;
     await axios.patch(
       url,
       {},
@@ -21,9 +21,9 @@ const Cart = () => {
     setCartItems((prevItems) => prevItems.filter((item) => item.ProductId !== id));
   };
 
-  const placeOrder = async ()=>{
+  const placeOrder = async () => {
     const user = JSON.parse(localStorage.getItem("user"));
-    const url = `https://game-store-txao-eight.vercel.app/api/v1/user/order`;
+    const url = `https://game-store-zo3k.vercel.app/api/v1/user/order`;
     await axios.post(
       url,
       {
@@ -36,25 +36,25 @@ const Cart = () => {
         },
       }
     );
-    cartItems.map((item)=>{
+    cartItems.map((item) => {
       removeItem(item.ProductId)
     })
     setCartItems([]);
   }
 
-  
+
   useEffect(() => {
     const total = cartItems.reduce(
       (total, item) => total + item.Price * item.Quantity,
       0
     );
     setCartTotal(total)
-  }, [cartItems]) 
-  
+  }, [cartItems])
+
   useEffect(() => {
     const getData = async () => {
       const user = JSON.parse(localStorage.getItem("user"));
-      const url = `https://game-store-txao-eight.vercel.app/api/v1/user/cart`;
+      const url = `https://game-store-zo3k.vercel.app/api/v1/user/cart`;
       const response = await axios.get(
         url,
         {
@@ -67,7 +67,7 @@ const Cart = () => {
     }
 
     getData()
-  }, []) 
+  }, [])
 
   return (
     <div className="min-h-screen px-8 py-10">
@@ -79,7 +79,7 @@ const Cart = () => {
           <p className="text-center text-gray-500">Your cart is empty.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div 
+            <div
               className="col-span-2 overflow-y-auto"
               style={{ maxHeight: '400px' }} // Adjust maxHeight as needed
             >

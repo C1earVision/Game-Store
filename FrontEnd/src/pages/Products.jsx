@@ -15,7 +15,7 @@ const Products = ({ searchData, setGameId }) => {
     setCategoryValue("")
     const pathSegments = location.pathname.split("/");
     let currentPlatform = pathSegments[pathSegments.length - 1] || "DefaultPlatform"; // Fallback value
-    if (currentPlatform === 'NINTENDO%20SWITCH'){
+    if (currentPlatform === 'NINTENDO%20SWITCH') {
       currentPlatform = 'NINTENDO SWITCH'
     }
     setPlatform(currentPlatform);
@@ -23,9 +23,9 @@ const Products = ({ searchData, setGameId }) => {
   }, [location.pathname]);
 
   useEffect(() => {
-    if (searchData){
-      const getData = async ()=>{
-        const url = `https://game-store-txao-eight.vercel.app/api/v1/products?Name=${searchData}`
+    if (searchData) {
+      const getData = async () => {
+        const url = `https://game-store-zo3k.vercel.app/api/v1/products?Name=${searchData}`
         const response = await axios.get(url);
         setData(response.data.games);
       }
@@ -37,11 +37,11 @@ const Products = ({ searchData, setGameId }) => {
     const selectedSort = event.target.value;
     setSortValue(selectedSort);
     try {
-      const url = `https://game-store-txao-eight.vercel.app/api/v1/products?` +
-      (platform === "AllGames"
-        ? categoryValue ? `CategoryId=${categoryValue}&` : ""
-        : `Platform=${platform}&${categoryValue ? `CategoryId=${categoryValue}&` : ""}`) +
-      (selectedSort ? `ORDER_BY=${selectedSort}` : "");
+      const url = `https://game-store-zo3k.vercel.app/api/v1/products?` +
+        (platform === "AllGames"
+          ? categoryValue ? `CategoryId=${categoryValue}&` : ""
+          : `Platform=${platform}&${categoryValue ? `CategoryId=${categoryValue}&` : ""}`) +
+        (selectedSort ? `ORDER_BY=${selectedSort}` : "");
 
 
       const response = await axios.get(url);
@@ -58,8 +58,8 @@ const Products = ({ searchData, setGameId }) => {
     setSortValue('');
     try {
       const url = selectedCategory === ""
-        ? `https://game-store-txao-eight.vercel.app/api/v1/products?${platform === "AllGames" ? "" : `Platform=${platform}`}`
-        : `https://game-store-txao-eight.vercel.app/api/v1/products?${platform === "AllGames" ? "" : `Platform=${platform}&`}CategoryId=${selectedCategory}`;
+        ? `https://game-store-zo3k.vercel.app/api/v1/products?${platform === "AllGames" ? "" : `Platform=${platform}`}`
+        : `https://game-store-zo3k.vercel.app/api/v1/products?${platform === "AllGames" ? "" : `Platform=${platform}&`}CategoryId=${selectedCategory}`;
 
       const response = await axios.get(url);
       setData(response.data.games);
@@ -72,7 +72,7 @@ const Products = ({ searchData, setGameId }) => {
   return (
     <div className="flex flex-row items-start gap-6 p-4">
       {/* Sorting and Category Dropdown */}
-      {!searchData?<div className="flex flex-col items-start mt-24 gap-4 p-4 bg-gray-100 rounded-md">
+      {!searchData ? <div className="flex flex-col items-start mt-24 gap-4 p-4 bg-gray-100 rounded-md">
         <div className="w-full">
           <label htmlFor="sort" className="block text-sm font-medium text-gray-700 mb-1">
             Sort
@@ -109,8 +109,8 @@ const Products = ({ searchData, setGameId }) => {
             <option value="Horror">Horror</option>
           </select>
         </div>
-      </div>:''}
-      
+      </div> : ''}
+
 
       {/* Category Component */}
       <div>

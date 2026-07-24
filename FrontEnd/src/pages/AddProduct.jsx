@@ -35,14 +35,14 @@ const AddProduct = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const formDataToSend = new FormData();
-    
+
     // Append all text fields to FormData (excluding images)
     for (const [key, value] of Object.entries(formData)) {
       formDataToSend.append(key, value);
     }
-    
+
     // Append image files to FormData
     images.forEach((image) => {
       formDataToSend.append("imgs", image);  // 'imgs' can be accessed on the backend as an array of files
@@ -51,16 +51,16 @@ const AddProduct = () => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
       const response = await axios.post(
-        "https://game-store-txao-eight.vercel.app/api/v1/user/admin", 
+        "https://game-store-zo3k.vercel.app/api/v1/user/admin",
         formDataToSend,
-        { 
-          headers: { 
+        {
+          headers: {
             "Content-Type": "multipart/form-data",  // Ensure Content-Type is multipart/form-data
             Authorization: `Bearer ${user.token}`,
           }
         }
       );
-      
+
       // Handle success, redirect to product listing page
       navigate("/");  // Redirect to product listing page
     } catch (error) {
@@ -228,7 +228,7 @@ const AddProduct = () => {
           </div>
         </form>
       </div>
-      
+
     </div>
   );
 };

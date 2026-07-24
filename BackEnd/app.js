@@ -21,7 +21,7 @@ app.use(express.json());
 app.use(helmet())
 app.use(xss())
 app.use(cors({
-  origin: ["https://game-store-txao-eight.vercel.app","http://localhost:5173"]
+  origin: ["https://game-store-blue-pi.vercel.app", "https://game-store-zo3k.vercel.app", "http://localhost:5173"]
 }))
 
 
@@ -39,7 +39,7 @@ const port = process.env.PORT || 3000;
 
 const start = async () => {
   try {
-    app.listen(port, () =>{
+    app.listen(port, () => {
       console.log(`Server is listening on port ${port}...`)
       console.log('latest commit')
     }
