@@ -22,8 +22,8 @@ app.use(helmet())
 app.use(xss())
 const allowedOrigins = [
   "https://game-store-blue-pi.vercel.app",
+  "https://game-store-zo3k.vercel.app",
   "http://localhost:5173",
-  "http://localhost:3000"
 ];
 
 app.use(cors({
