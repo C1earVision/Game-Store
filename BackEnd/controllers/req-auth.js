@@ -51,6 +51,7 @@ const addGame = async (req, res) => {
     res.status(StatusCodes.OK).send('Game added successfully');
   } catch (err) {
     console.error("Error adding game: ", err);
+    if (err instanceof CustomAPIError) throw err;
     throw new CustomAPIError('Error adding the game to the database', StatusCodes.INTERNAL_SERVER_ERROR);
   }
 };

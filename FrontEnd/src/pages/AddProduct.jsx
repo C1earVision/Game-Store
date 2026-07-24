@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -15,6 +15,8 @@ const AddProduct = () => {
     releaseDate: ''
   });
   const [images, setImages] = useState([]); // to store selected images
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef(null);
   const navigate = useNavigate();
 
   // Handle input changes for text fields
@@ -26,10 +28,53 @@ const AddProduct = () => {
     }));
   };
 
-  // Handle image file selection
+  // Add image files (shared by all input methods)
+  const addImages = useCallback((files) => {
+    const imageFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
+    setImages(prev => {
+      const combined = [...prev, ...imageFiles];
+      return combined.slice(0, 3); // max 3 images
+    });
+  }, []);
+
+  // Handle file input selection
   const handleImageChange = (e) => {
-    const selectedImages = Array.from(e.target.files);
-    setImages(selectedImages); // Save selected images
+    addImages(e.target.files);
+  };
+
+  // Handle drag events
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    addImages(e.dataTransfer.files);
+  };
+
+  // Handle paste
+  const handlePaste = (e) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const pastedFiles = [];
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        pastedFiles.push(item.getAsFile());
+      }
+    }
+    if (pastedFiles.length > 0) {
+      addImages(pastedFiles);
+    }
+  };
+
+  // Remove a single image
+  const removeImage = (index) => {
+    setImages(prev => prev.filter((_, i) => i !== index));
   };
 
   // Handle form submission
@@ -176,15 +221,21 @@ const AddProduct = () => {
           {/* Platform */}
           <div className="flex flex-col">
             <label htmlFor="platform" className=" font-medium mb-2">Platform</label>
-            <input
-              type="text"
+            <select
               id="platform"
               name="platform"
               value={formData.platform}
               onChange={handleChange}
               className="p-3 border bg-gray-700 border-gray-300 rounded-lg focus:outline-none "
               required
-            />
+            >
+              <option value="" disabled>Select a platform</option>
+              <option value="PC">PC</option>
+              <option value="PlayStation 5">PlayStation 5</option>
+              <option value="PlayStation 4">PlayStation 4</option>
+              <option value="PlayStation 3">PlayStation 3</option>
+              <option value="Switch">Switch</option>
+            </select>
           </div>
 
           {/* Release Date */}
@@ -201,20 +252,60 @@ const AddProduct = () => {
             />
           </div>
 
-          {/* Image Upload */}
+          {/* Image Upload - Drag & Drop / Paste / Click */}
           <div className="flex flex-col">
-            <label htmlFor="imgs" className=" font-medium mb-2">Upload Images (1 to 3)</label>
-            <input
-              type="file"
-              id="imgs"
-              name="imgs"
-              onChange={handleImageChange}
-              multiple
-              accept="image/*"
-              className="p-3 border bg-gray-700 border-gray-300 rounded-lg focus:outline-none "
-              required
-            />
-            <p className="text-sm text-gray-500 mt-2">You can upload up to 3 images.</p>
+            <label className="font-medium mb-2">Upload Images (1 to 3)</label>
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              onPaste={handlePaste}
+              onClick={() => fileInputRef.current?.click()}
+              tabIndex={0}
+              className={`p-6 border-2 border-dashed rounded-lg cursor-pointer text-center transition-colors ${
+                isDragging
+                  ? 'border-teal-400 bg-teal-400/10'
+                  : 'border-gray-500 bg-gray-700 hover:border-gray-400'
+              }`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                id="imgs"
+                name="imgs"
+                onChange={handleImageChange}
+                multiple
+                accept="image/*"
+                className="hidden"
+              />
+              <svg className="mx-auto h-10 w-10 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 16v-8m0 0l-3 3m3-3l3 3M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1" />
+              </svg>
+              <p className="text-gray-400">Drag & drop images here, click to browse, or <span className="text-teal-400">paste</span> from clipboard</p>
+              <p className="text-sm text-gray-500 mt-1">{images.length}/3 images selected</p>
+            </div>
+
+            {/* Image Previews */}
+            {images.length > 0 && (
+              <div className="flex gap-3 mt-3">
+                {images.map((img, idx) => (
+                  <div key={idx} className="relative group">
+                    <img
+                      src={URL.createObjectURL(img)}
+                      alt={`Preview ${idx + 1}`}
+                      className="w-24 h-24 object-cover rounded-lg border border-gray-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); removeImage(idx); }}
+                      className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Submit Button */}
