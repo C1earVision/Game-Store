@@ -20,9 +20,23 @@ app.set('trust proxy', 1);
 app.use(express.json());
 app.use(helmet())
 app.use(xss())
+const allowedOrigins = [
+  "https://game-store-blue-pi.vercel.app",
+  "http://localhost:5173",
+  "http://localhost:3000"
+];
+
 app.use(cors({
-  origin: ["https://game-store-blue-pi.vercel.app", "https://game-store-zo3k.vercel.app", "http://localhost:5173"]
-}))
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+}));
 
 
 
