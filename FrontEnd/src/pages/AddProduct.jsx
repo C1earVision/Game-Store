@@ -23,7 +23,7 @@ const AddProduct = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get("https://game-store-txao-eight.vercel.app/api/v1/categories");
+        const response = await axios.get("https://game-store-zo3k.vercel.app/api/v1/categories");
         setCategories(response.data.categories || []);
       } catch (error) {
         console.error("Error fetching categories:", error);
