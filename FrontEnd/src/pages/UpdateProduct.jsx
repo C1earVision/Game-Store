@@ -22,7 +22,7 @@ const UpdateProduct = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(`http://localhost:3000/api/v1/products/${id}`);
+        const response = await axios.get(`https://game-store-txao-eight.vercel.app/api/v1/products/${id}`);
         const product = response.data.game[0];
         setFieldValues({
           Name: product.Name || "",
@@ -78,7 +78,7 @@ const handleUpdate = async (field, index) => {
 
   try {
     await axios.patch(
-      `http://localhost:3000/api/v1/user/admin/${id}`,
+      `https://game-store-txao-eight.vercel.app/api/v1/user/admin/${id}`,
       field === 'Images' ? updateImg : updateData, 
       {
         headers: { 

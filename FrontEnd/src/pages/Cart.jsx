@@ -8,7 +8,7 @@ const Cart = () => {
 
   const removeItem = async (id) => {
     const user = JSON.parse(localStorage.getItem("user"));
-    const url = `http://localhost:3000/api/v1/user/cart/${id}`;
+    const url = `https://game-store-txao-eight.vercel.app/api/v1/user/cart/${id}`;
     await axios.patch(
       url,
       {},
@@ -23,7 +23,7 @@ const Cart = () => {
 
   const placeOrder = async ()=>{
     const user = JSON.parse(localStorage.getItem("user"));
-    const url = `http://localhost:3000/api/v1/user/order`;
+    const url = `https://game-store-txao-eight.vercel.app/api/v1/user/order`;
     await axios.post(
       url,
       {
@@ -54,7 +54,7 @@ const Cart = () => {
   useEffect(() => {
     const getData = async () => {
       const user = JSON.parse(localStorage.getItem("user"));
-      const url = `http://localhost:3000/api/v1/user/cart`;
+      const url = `https://game-store-txao-eight.vercel.app/api/v1/user/cart`;
       const response = await axios.get(
         url,
         {

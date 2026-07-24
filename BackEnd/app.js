@@ -21,7 +21,7 @@ app.use(express.json());
 app.use(helmet())
 app.use(xss())
 app.use(cors({
-  origin: ["https://book-app-store.netlify.app","http://localhost:5173"]
+  origin: ["https://game-store-txao-eight.vercel.app","http://localhost:5173"]
 }))
 
 

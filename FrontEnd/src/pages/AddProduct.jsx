@@ -51,7 +51,7 @@ const AddProduct = () => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
       const response = await axios.post(
-        "http://localhost:3000/api/v1/user/admin", 
+        "https://game-store-txao-eight.vercel.app/api/v1/user/admin", 
         formDataToSend,
         { 
           headers: { 

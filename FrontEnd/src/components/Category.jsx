@@ -13,19 +13,19 @@ const Categories = ({ sort, title, data, setGameId }) => {
       }
       if (title === 'AllGames') {
         const data = await axios.get(
-          `http://localhost:3000/api/v1/products`
+          `https://game-store-txao-eight.vercel.app/api/v1/products`
         );
         setData(data.data.games)
       }
       else if (title === 'Under 500 EGP') {
         const data = await axios.get(
-          `http://localhost:3000/api/v1/products`
+          `https://game-store-txao-eight.vercel.app/api/v1/products`
         );
   
         setData(data.data.games.filter((item)=>item.Price <= 500))
       }else{
         const data = await axios.get(
-          `http://localhost:3000/api/v1/products?${sort}=${title}`
+          `https://game-store-txao-eight.vercel.app/api/v1/products?${sort}=${title}`
         );
         setData(data.data.games)
       }

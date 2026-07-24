@@ -39,7 +39,7 @@ const Orders = ()=>{
     const getOrders = async () => {
       try {
         const user = JSON.parse(localStorage.getItem("user"));
-        const url = `http://localhost:3000/api/v1/user/order`;
+        const url = `https://game-store-txao-eight.vercel.app/api/v1/user/order`;
   
         const response = await axios.get(url, {
           headers: {
@@ -302,7 +302,7 @@ const OrdersAdmin = () => {
   const getOrders = async () => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
-      const url = `http://localhost:3000/api/v1/user/order`;
+      const url = `https://game-store-txao-eight.vercel.app/api/v1/user/order`;
 
       const response = await axios.get(url, {
         headers: {
@@ -323,7 +323,7 @@ const OrdersAdmin = () => {
 
   const handleDeliver = async (orderId) => {
     const user = JSON.parse(localStorage.getItem("user"));
-    const url = `http://localhost:3000/api/v1/user/order`;
+    const url = `https://game-store-txao-eight.vercel.app/api/v1/user/order`;
 
     await axios.patch(url,{
       orderId,
@@ -424,7 +424,7 @@ const AdminProducts = () => {
 
   const getProducts = async () => {
     try {
-      const response = await axios.get("http://localhost:3000/api/v1/products");
+      const response = await axios.get("https://game-store-txao-eight.vercel.app/api/v1/products");
       setProducts(response.data.games);
     } catch (error) {
       console.error("Error fetching products:", error);
@@ -436,7 +436,7 @@ const AdminProducts = () => {
 
   const handleSearch = async (value) =>{
     setSearchTerm(value)
-    const url = `http://localhost:3000/api/v1/products?Name=${value}`
+    const url = `https://game-store-txao-eight.vercel.app/api/v1/products?Name=${value}`
     const response = await axios.get(url);
     setProducts(response.data.games);
   }
@@ -444,7 +444,7 @@ const AdminProducts = () => {
   const handleDelete = async (productId) => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
-      await axios.delete(`http://localhost:3000/api/v1/user/admin/${productId}`,{
+      await axios.delete(`https://game-store-txao-eight.vercel.app/api/v1/user/admin/${productId}`,{
         headers: {
           Authorization: `Bearer ${user.token}`,
         },

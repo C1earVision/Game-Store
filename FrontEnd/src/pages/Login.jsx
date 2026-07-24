@@ -28,7 +28,7 @@ const Login = ({ setUserData }) => {
     }
 
     try {
-      const url = `http://localhost:3000/api/v1/auth/login`
+      const url = `https://game-store-txao-eight.vercel.app/api/v1/auth/login`
       const user = await axios.post(url, {
         email: email,
         password: password,

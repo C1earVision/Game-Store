@@ -25,7 +25,7 @@ const Products = ({ searchData, setGameId }) => {
   useEffect(() => {
     if (searchData){
       const getData = async ()=>{
-        const url = `http://localhost:3000/api/v1/products?Name=${searchData}`
+        const url = `https://game-store-txao-eight.vercel.app/api/v1/products?Name=${searchData}`
         const response = await axios.get(url);
         setData(response.data.games);
       }
@@ -37,7 +37,7 @@ const Products = ({ searchData, setGameId }) => {
     const selectedSort = event.target.value;
     setSortValue(selectedSort);
     try {
-      const url = `http://localhost:3000/api/v1/products?` +
+      const url = `https://game-store-txao-eight.vercel.app/api/v1/products?` +
       (platform === "AllGames"
         ? categoryValue ? `CategoryId=${categoryValue}&` : ""
         : `Platform=${platform}&${categoryValue ? `CategoryId=${categoryValue}&` : ""}`) +
@@ -58,8 +58,8 @@ const Products = ({ searchData, setGameId }) => {
     setSortValue('');
     try {
       const url = selectedCategory === ""
-        ? `http://localhost:3000/api/v1/products?${platform === "AllGames" ? "" : `Platform=${platform}`}`
-        : `http://localhost:3000/api/v1/products?${platform === "AllGames" ? "" : `Platform=${platform}&`}CategoryId=${selectedCategory}`;
+        ? `https://game-store-txao-eight.vercel.app/api/v1/products?${platform === "AllGames" ? "" : `Platform=${platform}`}`
+        : `https://game-store-txao-eight.vercel.app/api/v1/products?${platform === "AllGames" ? "" : `Platform=${platform}&`}CategoryId=${selectedCategory}`;
 
       const response = await axios.get(url);
       setData(response.data.games);
