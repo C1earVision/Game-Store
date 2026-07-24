@@ -16,13 +16,23 @@ const UpdateProduct = () => {
     Images: ["", "", ""],
   });
 
-  const categories = ["Action", "Adventure", "RPG", "Fantasy", "Horror"];
+  const [categoriesList, setCategoriesList] = useState([]);
 
-  // Fetch product data
+  // Fetch categories & product data
   useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get("https://game-store-txao-eight.vercel.app/api/v1/categories");
+        setCategoriesList(response.data.categories || []);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+
     const fetchProduct = async () => {
       try {
-        const response = await axios.get(`https://game-store-zo3k.vercel.app/api/v1/products/${id}`);
+        const response = await axios.get(`https://game-store-txao-eight.vercel.app/api/v1/products/${id}`);
         const product = response.data.game[0];
         setFieldValues({
           Name: product.Name || "",
@@ -170,9 +180,10 @@ const UpdateProduct = () => {
               onChange={(e) => handleChange(e, "CategoryId")}
               className="flex-1 p-2 bg-gray-700 rounded"
             >
-              {categories.map((cat, index) => (
-                <option key={index} value={cat}>
-                  {cat}
+              <option value="" disabled>Select a category</option>
+              {categoriesList.map((cat) => (
+                <option key={cat.CategoryId} value={cat.Name}>
+                  {cat.Name}
                 </option>
               ))}
             </select>

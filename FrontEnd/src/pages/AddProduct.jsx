@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -14,10 +14,23 @@ const AddProduct = () => {
     platform: '',
     releaseDate: ''
   });
+  const [categories, setCategories] = useState([]);
   const [images, setImages] = useState([]); // to store selected images
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await axios.get("https://game-store-txao-eight.vercel.app/api/v1/categories");
+        setCategories(response.data.categories || []);
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // Handle input changes for text fields
   const handleChange = (e) => {
@@ -204,18 +217,24 @@ const AddProduct = () => {
             />
           </div>
 
-          {/* Category ID */}
+          {/* Category */}
           <div className="flex flex-col">
-            <label htmlFor="categoryId" className=" font-medium mb-2">Category ID</label>
-            <input
-              type="text"
+            <label htmlFor="categoryId" className=" font-medium mb-2">Category</label>
+            <select
               id="categoryId"
               name="categoryId"
               value={formData.categoryId}
               onChange={handleChange}
               className="p-3 border bg-gray-700 border-gray-300 rounded-lg focus:outline-none "
               required
-            />
+            >
+              <option value="" disabled>Select a category</option>
+              {categories.map((cat) => (
+                <option key={cat.CategoryId} value={cat.Name}>
+                  {cat.Name}
+                </option>
+              ))}
+            </select>
           </div>
 
           {/* Platform */}

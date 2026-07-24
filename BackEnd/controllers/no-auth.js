@@ -184,7 +184,18 @@ const getGame = async (req, res) => {
 
 
 
+const getCategories = async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM "Category" ORDER BY "Name" ASC');
+    res.status(StatusCodes.OK).json({ categories: result.rows });
+  } catch (err) {
+    console.error("Error fetching categories: ", err);
+    throw new CustomAPIError('Error fetching categories from database', StatusCodes.BAD_REQUEST);
+  }
+};
+
 module.exports = {
   getAllGames,
-  getGame
+  getGame,
+  getCategories
 }
