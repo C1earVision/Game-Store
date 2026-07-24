@@ -13,15 +13,16 @@ const getAllGames = async (req, res) => {
       // Handle filtering by CategoryId
       if (queryKeys.includes('CategoryId')) {
         const index = queryKeys.indexOf('CategoryId');
-        let categoryId = await pool.query(
+        let categoryResult = await pool.query(
           `SELECT "CategoryId" FROM "Category" WHERE "Name" = $1`,
           [queryValues[index]]
         );
-        categoryId = categoryId.rows[0]?.CategoryId;
-        if (categoryId !== undefined) {
-          queryKeys[index] = 'p."CategoryId"';
-          queryValues[index] = categoryId;
+        if (categoryResult.rows.length === 0) {
+          // Category not found — return empty
+          return res.status(StatusCodes.OK).json({ games: [] });
         }
+        queryKeys[index] = 'p."CategoryId"';
+        queryValues[index] = categoryResult.rows[0].CategoryId;
       }
 
       // Handle filtering by Name
